@@ -1,28 +1,24 @@
-package com.spoddutur.util
+package com.lorenzo.baldacci.util
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 
-/**
-  * Created by sruthi on 03/07/17.
-  * Loads default config params from application.conf file.
-  * It also supports cmd-line args to override the default values.
-  */
 object AppConfig {
 
-  val conf = ConfigFactory.load
-  val sparkMasterDef = conf.getString("spark.master")
-  val sparkAppNameDef = conf.getString("spark.appname")
-  val akkaHttpPortDef = conf.getInt("akka.http.port")
+  val conf: Config = ConfigFactory.load
+  val sparkMasterDef: String = conf.getString("spark.master")
+  val sparkAppNameDef: String = conf.getString("spark.appname")
+  val akkaHttpPortDef: Int = conf.getInt("akka.http.port")
 
-  var akkaHttpPort = akkaHttpPortDef
-  var sparkMaster = sparkMasterDef
-  var sparkAppName = sparkAppNameDef
+  var akkaHttpPort: Int = akkaHttpPortDef
+  var sparkMaster: String = sparkMasterDef
+  var sparkAppName: String = sparkAppNameDef
 
   def main(args: Array[String]): Unit = {
     parse("-m localhost1 --akkaHttpPort 8080".split(" ").toList)
     print(sparkMaster, sparkAppName, akkaHttpPort)
   }
 
+  //TODO: will edit this at the end of the development
   val usage =
     s"""
 This application comes as Spark2.1-REST-Service-Provider using an embedded,
@@ -48,28 +44,21 @@ Configured 4 routes:
 
     list match {
       case Nil => this
-      case ("--master" | "-m") :: value :: tail => {
+      case ("--master" | "-m") :: value :: tail =>
         sparkMaster = value
         parse(tail)
-      }
-      case ("--name" | "-n") :: value :: tail => {
+      case ("--name" | "-n") :: value :: tail =>
         sparkAppName = value
         parse(tail)
-      }
-      case ("--akkaHttpPort" | "-p") :: value :: tail => {
+      case ("--akkaHttpPort" | "-p") :: value :: tail =>
         akkaHttpPort = value.toInt
         parse(tail)
-      }
-      case ("--help" | "-h") :: tail => {
-        printUsage(0)
-      }
-      case _ => {
-        printUsage(1)
-      }
+      case ("--help" | "-h") :: _ => printUsage(0)
+      case _ => printUsage(1)
     }
   }
 
-  def printUsage(exitNumber: Int) = {
+  def printUsage(exitNumber: Int): Nothing = {
     println(usage)
     sys.exit(status = exitNumber)
   }
