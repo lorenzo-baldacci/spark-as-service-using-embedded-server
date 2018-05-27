@@ -4,7 +4,6 @@ package com.spoddutur.web
   * Created by sruthi on 03/07/17.
   */
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{HttpApp, Route}
 import com.spoddutur.spark.SparkFactory
 
@@ -44,15 +43,20 @@ object WebServer extends HttpApp {
           complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"<h1>Count 0 to 500000 using Spark with 25 partitions: ${HttpService.count()}"))
         }
       } ~
+      path("fileLines") {
+        get {
+          complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"<h1>Number of lines in file: ${HttpService.getFileLines}"))
+        }
+      } ~
     path("customer"/IntNumber) { id =>
         complete {
-          s"CustId: ${id}"
+          s"CustId: $id"
         }
     } ~
     path("customer") {
       parameter('id.as[Int]) { id =>
         complete {
-          s"CustId: ${id}"
+          s"CustId: $id"
         }
       }
     } ~
@@ -60,7 +64,7 @@ object WebServer extends HttpApp {
       parameters('r.as[Int], 'g.as[Int], 'b.as[Int]) { (r1, g, b) =>
 
         complete {
-         s"(R,G,B): ${r1}, ${g}, ${b}"
+         s"(R,G,B): $r1, $g, $b"
         }
       }
     }

@@ -1,6 +1,8 @@
 package com.spoddutur.web
 
 import com.spoddutur.spark.SparkFactory
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SparkSession
 
 /**
   * Created by sruthi on 03/07/17.
@@ -8,7 +10,8 @@ import com.spoddutur.spark.SparkFactory
   */
 object HttpService {
 
-  val sc = SparkFactory.sc
+  val sc: SparkContext = SparkFactory.sc
+  val spark: SparkSession = SparkFactory.spark
 
   // To server http://host:port/count route binding
   // Random spark job counting a seq of integers split into 25 partitions
@@ -17,4 +20,10 @@ object HttpService {
   // To server http://host:port/activeStreams route binding
   // Returns how many streams are active in sparkSession currently
   def activeStreamsInSparkContext(): Int = SparkFactory.spark.streams.active.length
+
+  def getFileLines: Long = {
+    val csvFile = "Users/lbaldacci/Develop/data/iclr2017_papers.csv"
+    val fileData = spark.read.textFile(s"file:///$csvFile")
+    fileData.count
+  }
 }
