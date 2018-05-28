@@ -12,6 +12,9 @@ object SparkSearchEngine {
 
   import sparkSession.implicits._
 
+  private val storageFileName = AppConfig.appStorageFolder + AppConfig.appStorageFileName
+  private val paperFolder = AppConfig.appPapersFolder
+
   def getSparkVersion: String = sparkSession.version
 
   def getIndexedFileLines: Long = {
@@ -32,31 +35,38 @@ object SparkSearchEngine {
   }
 
   def writeToLocalFile(ds: Dataset[InverseIndex], fullFileName: String): Unit = {
-//    val records: Array[InverseIndex] = ds.collect()
+    val records: Array[InverseIndex] = ds.collect()
 
-//    records.foreach(println)
-
-//    val outputFile = new BufferedWriter(new FileWriter(fullFileName))
-//    outputFile.write("key,paperId")
-//    records.foreach(r => outputFile.write(s"${r.key}, ${r.paperId}"))
-//    outputFile.close()
+    val outputFile = new BufferedWriter(new FileWriter(fullFileName))
+    outputFile.write("key,paperId\n")
+    records.foreach(r => outputFile.write(s"${r.key}, ${r.paperId}\n"))
+    outputFile.close()
   }
 
   def createOrReplaceIndex: Long = {
-    val papers = readFilesFromFolder(AppConfig.appPapersFolder)
+    val papers = readFilesFromFolder(paperFolder)
 
     val invertedIndexProcessor = new InvertedIndexProcessor
     val invertedIndex = invertedIndexProcessor.CreateInvertedIndex(papers.map(p => Item(p.paper_id, p.summary)))
 
-    invertedIndex.show()
-
-    writeToLocalFile(invertedIndex, AppConfig.appStorageFolder + AppConfig.appStorageFileName)
+    writeToLocalFile(invertedIndex, storageFileName)
 
     papers.count
   }
+
+  def retrievePaperIds(word: String): Array[String] = {
+    val index = sparkSession.read.format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load(s"file://$storageFileName")
+      .as[InverseIndex]
+
+    index.filter(_.key == word).map(_.paperId).collect()
+  }
+
 }
 
-case class Paper(summary: String, authorids: String, authors: String, conflicts: String, keywords: String,
-                 paper_id: String, paperhash: String, title: String, tldr: String, decision: String,
-                 forum_link: String, pdf_link: String)
+case class Paper(summary: Option[String], authorids: Option[String], authors: Option[String], conflicts: Option[String],
+                 keywords: Option[String], paper_id: Option[String], paperhash: Option[String], title: Option[String],
+                 tldr: Option[String], decision: Option[String], forum_link: Option[String], pdf_link: Option[String])
 

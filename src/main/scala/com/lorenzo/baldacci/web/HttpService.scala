@@ -12,6 +12,5 @@ object HttpService {
 
   def createOrReplaceIndex: String = "Number of lines in file: " + SparkSearchEngine.createOrReplaceIndex
 
-  def getPapers(word: String): String = s"getPapers($word: Int)"
-
+  def getPapers(word: String): String = s"[${SparkSearchEngine.retrievePaperIds(word).mkString(", ")}]"
 }
