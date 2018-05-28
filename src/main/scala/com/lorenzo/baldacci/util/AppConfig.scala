@@ -4,14 +4,20 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 object AppConfig {
 
-  val conf: Config = ConfigFactory.load
-  val sparkMasterDef: String = conf.getString("spark.master")
-  val sparkAppNameDef: String = conf.getString("spark.appname")
-  val akkaHttpPortDef: Int = conf.getInt("akka.http.port")
+  private val conf: Config = ConfigFactory.load
+  private val sparkMasterDef: String = conf.getString("spark.master")
+  private val sparkAppNameDef: String = conf.getString("spark.appname")
+  private val akkaHttpPortDef: Int = conf.getInt("akka.http.port")
+  private val appFolderPapersDef: String = conf.getString("app.papers.folder")
+  private val appFolderStorageDef: String = conf.getString("app.storage.folder")
+  private val appStorageFileNameDef: String = conf.getString("app.storage.name")
 
   var akkaHttpPort: Int = akkaHttpPortDef
   var sparkMaster: String = sparkMasterDef
   var sparkAppName: String = sparkAppNameDef
+  var appPapersFolder: String = appFolderPapersDef
+  var appStorageFolder: String = appFolderStorageDef
+  var appStorageFileName: String = appStorageFileNameDef
 
   def main(args: Array[String]): Unit = {
     parse("-m localhost1 --akkaHttpPort 8080".split(" ").toList)
