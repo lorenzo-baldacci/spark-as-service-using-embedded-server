@@ -31,16 +31,17 @@ Out of scope are the problems related to the re-indexing of a paper and I just n
 6. **query the index** - GET - http://host:port/getPapers/WORD_TO_SEARCH
 
 ## 4. Building
+### 4.1 Building
 It uses *Scala 2.11*, *Spark 2.3* and *Akka-Http 10.0.9*
 ```markdown
 mvn clean install
 ```
-## 5. Execution
+### 4.2 Execution
 We can start our application as stand-alone jar like this:
 ```markdown
 mvn exec:java
 ```
-### 5.1 Configuration and cmd-line-args
+### 4.3 Configuration and cmd-line-args
 The application uses the following configuration parameters:
 ```init
 spark.master = local
