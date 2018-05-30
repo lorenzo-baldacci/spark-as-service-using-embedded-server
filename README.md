@@ -1,31 +1,37 @@
-# spark-as-service-using-embedded-server
-This application comes as Spark2.1-REST-Service-Provider using an embedded, Reactive-Streams-based, fully asynchronous HTTP server.
+# Exposing Inverted Index services through rest API
+This application exposes rest APIs of search engine based on Inverted Index. It uses Spark 2.3 as distributed engine and Akka HTTP for the rest API.
 
-## 1. Central Idea
-I wanted to build an interactive REST api service on top of my ApacheSpark application which serves use-cases like:
-```ini
-- Load the trained model in SparkSession and quickly do the prediction for user given query._
-- Have your big-data cached in cluster and provide user an endpoint to query it.
-- Run some recurrent spark queries with varying parameters.
-```
+The engine allow both batch indexing and streaming. It leverages spark's in-memory data structures for a fast indexing and retrieval.
+When the engine starts, its index is empty and incrementally grows when processing batches of files or when new papers are submitted through the API.
+Moreover its index can be persisted in a physical storage and loaded back to allow the engine to be stopped and restarted.
 
-As you can see that the ```core``` of the application is not primarily a web-application OR browser-interaction but to have REST service performing big-data cluster-computation on ApacheSpark.
 
-## 2. Akka-HTTP as apt-fit:
-With Akka-Http, you normally don’t build your application ```on top of``` Akka HTTP, but you build your application on top of whatever makes sense and use Akka HTTP merely for the HTTP integration needs. So, I found Akka-HTTP to be right fit for the usecases mentioned above.
+## 1. Exposed services
+Once the application starts it exposes an http page so the user can check through a browser that the engine is up and running. 
+- **index papers from file**: retrieves papers from file, process them in bulk, add to the index
+- **index single paper**: process the given paper and add it to the index
+- **persist index**: save the index in a permanent storage
+- **retrieve persisted index**: substitutes the index with one stored previously
+- **query the index**: returns the list of papers where the word is found
 
-## 3. Architecture
-### 3.1 To demo this, I've configured following four routes:
-1. **homepage** - [http://localhost:8001](#homepage) - says "hello world"
-2. **version** - [http://localhost:8001/version](#version) - queries shared SparkSession and tells "spark version"
-3. **activeStreams** - [http://localhost:8001/activeStreams](#activeStreams) - tells how many spark streams are active currently
-4. **count** - [http://localhost:8001/count](#count) - random spark job to count number of elements in a sequence.
+## 2. What's in scope and what is not:
+The application is composed of 3 main packages: *web*, *search* and *utils*. 
+1. The package *web* deals with the rest services and the integration to internal functionalities. This is where internal data structures should be translated into a http-friendly manner (e.g. json).
+I left this translation out of scope along with unit tests.
+2. The package *search* holds the core functionalities of the indexing and search engine. I added basic unit tests for this package.
+Out of scope are the problems related to the re-indexing of a paper and I just naively managed the duplicated entry o a paper (i.e. submitting the same paper multiple times). In this exercise I also did not deal with data quality related issues in text (e.g. stopWords, synonyms, etc)
+3. I dropped in the package *utils* al those functionalities that I needed to upport the app but where not big enough to create their own package. It is worth mentioning that any I/O related functionalities sit here. Again I have left out of scope the unit test of this package.
 
-Following picture illustrates the routing of a HttpRequest:
-<img src="https://user-images.githubusercontent.com/22542670/27865894-ee70d42a-61b1-11e7-9595-02b845a9ffae.png" width="700"/>
+## 3. How to call the services
+1. **homepage** - GET - http://host:port
+2. **index papers from file** - POST - http://host:port/indexPapersFromFile
+3. **index single paper** - POST - http://host:port/indexPaper/PAPER_ID|ABSTRACT (note that paper id and abstrct are concatenated with a pipe)
+4. **persist index** - POST - http://host:port/persistIndex
+5. **retrieve persisted index** - POST - http://host:port/retrievePersistedIndex
+6. **query the index** - GET - http://host:port/getPapers/WORD_TO_SEARCH
 
 ## 4. Building
-It uses [Scala 2.11](#scala), [Spark 2.1](#spark) and [Akka-Http](#akka-http)
+It uses *Scala 2.11*, *Spark 2.3* and *Akka-Http 10.0.9*
 ```markdown
 mvn clean install
 ```
@@ -34,7 +40,17 @@ We can start our application as stand-alone jar like this:
 ```markdown
 mvn exec:java
 ```
-### 5.1 cmd-line-args
+### 5.1 Configuration and cmd-line-args
+The application uses the following configuration parameters:
+```init
+spark.master = local
+spark.appname = spark-search-engine
+akka.http.port = 8001
+papers.folder = /path/to/paper/csv/files/
+storage.folder = /path/to/app/index/storage/
+storage.file.name = invertedIndexStorage.csv
+```
+You can change the default configurations directly on the *application.conf* file.
 Optionally, you can provide configuration params like spark-master, akka-port etc from command line. To see the list of configurable params, just type:
 ```markdown
 mvn exec:java -Dexec.args="--help" 
@@ -43,23 +59,16 @@ mvn exec:java -Dexec.args=“-h"
 ```
 
 ```ini
-Help content will look something like this:
-This application comes as Spark2.1-REST-Service-Provider using an embedded,
-Reactive-Streams-based, fully asynchronous HTTP server (i.e., using akka-http).
+This application exposes rest APIs of search engine based on Inverted Index. It uses Spark 2.3 as distributed engine and Akka HTTP for the rest API.
 So, this application needs config params like AkkaWebPort to bind to, SparkMaster
 and SparkAppName
 
-Usage: spark-submit spark-as-service-using-embedded-server.jar [options]
+Usage: spark-submit jarname.jar [options]
   Options:
   -h, --help
-  -m, --master <master_url>                    spark://host:port, mesos://host:port, yarn, or local. Default: local
-  -n, --name <name>                            A name of your application. Default: SparkAsRestService
-  -p, --akkaHttpPort <portnumber>              Port where akka-http is binded. Default: 8001
+  -m, --master <master_url>                    spark://host:port, mesos://host:port, yarn, or local. Default: $sparkMasterDef
+  -n, --name <name>                            A name of your application. Default: $sparkAppNameDef
+  -p, --akkaHttpPort <portnumber>              Port where akka-http is binded. Default: $akkaHttpPortDef
+  -f, --paperFolder <paper_folder>             Folder in which papers can be processed in batch. Default: $papersFolderDef
+  -s, --storageFolder <storage_folder>         Folder in which the application will persist the inverted index. Default: $storageFolder
 ```
-### 5.2 Tweak Default cmd-line args
-There are 2 ways to change the default param values:
-1. Update ```src/main/resources/application.conf``` file directly. Build and then Run
-2. ```mvn exec:java -Dexec.args="--master <master> --name <spark-app-name> --akkaHttpPort <port-to-which-akka-should-listen-to>"```
-
-## 6. References
-[Akka](http://doc.akka.io/docs/akka-http/current/scala/http/introduction.html)

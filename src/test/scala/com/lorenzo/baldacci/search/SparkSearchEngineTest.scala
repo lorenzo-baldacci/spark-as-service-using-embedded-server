@@ -1,6 +1,10 @@
 package com.lorenzo.baldacci.search
 
 import com.lorenzo.baldacci.test_utilities.ScalaTestWithSparkSession
+import com.lorenzo.baldacci.util.AppConfig
+import com.lorenzo.baldacci.util.IOLayer.readFilesFromFolder
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.functions._
 
 class SparkSearchEngineTest extends ScalaTestWithSparkSession {
   testWithSpark("index should be empty at start") {
@@ -54,11 +58,6 @@ class SparkSearchEngineTest extends ScalaTestWithSparkSession {
       sparkSearchEngine.addToIndex(singlePaperSummary)
 
       val searchResult = sparkSearchEngine.getPaperIds(wordToSearch)
-
-      println(wordToSearch)
-      println(singlePaperSummary)
-      searchResult.foreach(println)
-      sparkSearchEngine.getIndex.show(false)
 
       searchResult should contain(singlePaperSummary.paperId.get)
   }

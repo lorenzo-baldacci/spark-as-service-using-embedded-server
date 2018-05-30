@@ -40,7 +40,3 @@ case class Paper(summary: Option[String], authorids: Option[String], authors: Op
 case class Summary(paperId: Option[String], text: Option[String])
 
 case class InverseIndex(key: String, paperId: String)
-
-// did not manage:
-// re-indexing of a paper and naively managed the duplicated entry o a paper (i.e. submitting the same paper multiple times)
-// stopWords, synonyms

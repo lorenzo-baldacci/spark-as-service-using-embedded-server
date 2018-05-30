@@ -26,12 +26,11 @@ object AppConfig {
 
   val usage =
     s"""
-This application comes as Spark2.1-REST-Service-Provider using an embedded,
-Reactive-Streams-based, fully asynchronous HTTP server (i.e., using akka-http).
+This application exposes rest APIs of search engine based on Inverted Index. It uses Spark 2.3 as distributed engine and Akka HTTP for the rest API.
 So, this application needs config params like AkkaWebPort to bind to, SparkMaster
 and SparkAppName
 
-Usage: spark-submit spark-as-service-using-embedded-server.jar [options]
+Usage: spark-submit jarname.jar [options]
   Options:
   -h, --help
   -m, --master <master_url>                    spark://host:port, mesos://host:port, yarn, or local. Default: $sparkMasterDef
@@ -40,14 +39,14 @@ Usage: spark-submit spark-as-service-using-embedded-server.jar [options]
   -f, --paperFolder <paper_folder>             Folder in which papers can be processed in batch. Default: $papersFolderDef
   -s, --storageFolder <storage_folder>         Folder in which the application will persist the inverted index. Default: $storageFolder
 
-Configured 4 routes:
+Configured 6 routes:
 1. homepage - http://host:port - says "hello world"
 2. index papers from file - http://host:port/indexPapersFromFile - retrieves papers from file, process them in bulk, add to the index
 3. index single paper - http://host:port/indexPaper/PAPER_ID|ABSTRACT - process the given paper and add it to the index
 4. persist index - http://host:port/persistIndex - save the index in a permanent storage
 5. retrieve persisted index - http://host:port/retrievePersistedIndex - substitutes the index with one stored previously
 6. query the index - http://host:port/getPapers/WORD_TO_SEARCH - returns the list of papers where the word is found
-      """
+  """
 
   def parse(list: List[String]): this.type = {
 
