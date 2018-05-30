@@ -1,5 +1,5 @@
 # Exposing Inverted Index services through rest API
-This application exposes rest APIs of search engine based on Inverted Index. It uses Spark 2.3 as distributed engine and Akka HTTP for the rest API.
+This application exposes a search engine based on Inverted Index through rest APIs. It uses Spark 2.3 as distributed engine and Akka HTTP for the rest API layer.
 
 The engine allow both batch indexing and streaming. It leverages spark's in-memory data structures for a fast indexing and retrieval.
 When the engine starts, its index is empty and incrementally grows when processing batches of files or when new papers are submitted through the API.
@@ -8,19 +8,19 @@ Moreover its index can be persisted in a physical storage and loaded back to all
 
 ## 1. Exposed services
 Once the application starts it exposes an http page so the user can check through a browser that the engine is up and running. 
-- **index papers from file**: retrieves papers from file, process them in bulk, add to the index
-- **index single paper**: process the given paper and add it to the index
+- **index papers from file**: retrieves papers from file, process them in bulk, add to the index (download a sample file from [here](https://www.kaggle.com/ahmaurya/iclr2017reviews/data))
+- **index single paper**: process the given paper and add it to the index - this allow adding new papers from a streaming application
 - **persist index**: save the index in a permanent storage
 - **retrieve persisted index**: substitutes the index with one stored previously
-- **query the index**: returns the list of papers where the word is found
+- **query the index**: returns the list of papers where a given word is found
 
 ## 2. What's in scope and what is not:
-The application is composed of 3 main packages: *web*, *search* and *utils*. 
-1. The package *web* deals with the rest services and the integration to internal functionalities. This is where internal data structures should be translated into a http-friendly manner (e.g. json).
+The application is composed of 3 packages: *web*, *search* and *utils*. 
+1. The package *web* deals with the rest services and their integration to internal functionalities. This is where internal data structures should be translated into a http-friendly manner (e.g. json).
 I left this translation out of scope along with unit tests.
 2. The package *search* holds the core functionalities of the indexing and search engine. I added basic unit tests for this package.
-Out of scope are the problems related to the re-indexing of a paper and I just naively managed the duplicated entry o a paper (i.e. submitting the same paper multiple times). In this exercise I also did not deal with data quality related issues in text (e.g. stopWords, synonyms, etc)
-3. I dropped in the package *utils* al those functionalities that I needed to upport the app but where not big enough to create their own package. It is worth mentioning that any I/O related functionalities sit here. Again I have left out of scope the unit test of this package.
+Out of scope are the problems related to the re-indexing of a paper and I just naively managed the duplicated entry of a paper (i.e. submitting the same paper multiple times). In this exercise I also did not deal with data quality issues related to text (e.g. stopWords, synonyms, etc)
+3. I dropped in the package *utils* al those functionalities that I needed to support the app and where not big enough to create their own package. It is worth mentioning that any I/O related functionalities sit here and I have not spend a lot of time in any error handling and unit tests.
 
 ## 3. How to call the services
 1. **homepage** - GET - http://host:port
@@ -30,8 +30,8 @@ Out of scope are the problems related to the re-indexing of a paper and I just n
 5. **retrieve persisted index** - POST - http://host:port/retrievePersistedIndex
 6. **query the index** - GET - http://host:port/getPapers/WORD_TO_SEARCH
 
-## 4. Building
-### 4.1 Building
+## 4. How to run the application
+### 4.1 Build
 It uses *Scala 2.11*, *Spark 2.3* and *Akka-Http 10.0.9*
 ```markdown
 mvn clean install
@@ -76,5 +76,4 @@ Usage: spark-submit jarname.jar [options]
 
 ## 4. Credits
 The project has been cloned from [here](https://github.com/spoddutur/spark-as-service-using-embedded-server)
-which provides a framework ready for spark and akka http. It then went through refactoring, core functionalities tests and development, i/o integration ant other bits and pieces.
-
+which provides an empty framework ready for spark and akka http. It then went through refactoring, core functionalities tests and implementation, i/o integration, upgrade of scala, spark and akka http libraries, and other bits and pieces.
