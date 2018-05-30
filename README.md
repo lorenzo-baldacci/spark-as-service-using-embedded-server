@@ -73,3 +73,8 @@ Usage: spark-submit jarname.jar [options]
   -f, --paperFolder <paper_folder>             Folder in which papers can be processed in batch. Default: $papersFolderDef
   -s, --storageFolder <storage_folder>         Folder in which the application will persist the inverted index. Default: $storageFolder
 ```
+
+## 4. Credits
+The project has been cloned from [here](https://github.com/spoddutur/spark-as-service-using-embedded-server)
+which provides a framework ready for spark and akka http. It then went through refactoring, core functionalities tests and development, i/o integration ant other bits and pieces.
+
