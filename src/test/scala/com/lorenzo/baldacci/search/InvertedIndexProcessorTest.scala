@@ -1,9 +1,9 @@
 package com.lorenzo.baldacci.search
 
-import com.lorenzo.baldacci.search.test_utilities.ScalaTestWithSparkSession
+import com.lorenzo.baldacci.test_utilities.ScalaTestWithSparkSession
 
 class InvertedIndexProcessorTest extends ScalaTestWithSparkSession {
-  testWithSpark("should return the inverted index") {
+  testWithSpark("should process summaries in batch") {
     implicit sparkSession =>
       import sparkSession.implicits._
 
@@ -13,10 +13,11 @@ class InvertedIndexProcessorTest extends ScalaTestWithSparkSession {
       val key4 = someSmallString
 
       val rawData = Seq(
-        Item(Option(key1), Option("some random : some text here (maybe)")),
-        Item(Option(key2), Option("some other random text")),
-        Item(Option(key3), Option("")),
-        Item(Option(key4), None)
+        Summary(Option(key1), Option("some random : some text here (maybe)")),
+        Summary(Option(key2), Option("some other random text")),
+        Summary(Option(key3), Option("")),
+        Summary(Option(key4), None),
+        Summary(None, Option("this one will be lost"))
       )
 
       val rawItems = sparkSession.createDataset(rawData)
@@ -24,7 +25,7 @@ class InvertedIndexProcessorTest extends ScalaTestWithSparkSession {
       val invertedIndexProcessor = new InvertedIndexProcessor
       val indexedText = invertedIndexProcessor.CreateInvertedIndex(rawItems).collect().toSet
 
-      val expectedResult = Set(
+      val expectedIndexedText = Set(
         InverseIndex("some", key1),
         InverseIndex("random", key1),
         InverseIndex("text", key1),
@@ -36,14 +37,14 @@ class InvertedIndexProcessorTest extends ScalaTestWithSparkSession {
         InverseIndex("text", key2)
       )
 
-      indexedText shouldBe expectedResult
+      indexedText shouldBe expectedIndexedText
   }
 
-  testWithSpark("should return empty set when nothing to index") {
+  testWithSpark("should return empty set when the batch is empty") {
     implicit sparkSession =>
       import sparkSession.implicits._
 
-      val rawData = Seq.empty[Item]
+      val rawData = Seq.empty[Summary]
 
       val rawItems = sparkSession.createDataset(rawData)
 
@@ -53,5 +54,40 @@ class InvertedIndexProcessorTest extends ScalaTestWithSparkSession {
       val expectedResult = Set.empty[InverseIndex]
 
       indexedText shouldBe expectedResult
+  }
+
+  testWithSpark("should process a single paper") {
+    implicit sparkSession =>
+      val key = someSmallString
+      val paper = Summary(Option(key), Option("some random : some text here (maybe)"))
+
+      val invertedIndexProcessor = new InvertedIndexProcessor
+      val indexedText = invertedIndexProcessor.CreateInvertedIndex(paper).collect().toSet
+
+      val expectedIndexedText = Set(
+        InverseIndex("some", key),
+        InverseIndex("random", key),
+        InverseIndex("text", key),
+        InverseIndex("here", key),
+        InverseIndex("maybe", key)
+      )
+
+      indexedText shouldBe expectedIndexedText
+  }
+
+  testWithSpark("should return an empty set when papers are not completely defined") {
+    implicit sparkSession =>
+      val key1 = someSmallString
+      val paper1 = Summary(Option(key1), None)
+      val paper2 = Summary(None, Option("some random : some text here (maybe)"))
+
+      val invertedIndexProcessor = new InvertedIndexProcessor
+      val indexedText1 = invertedIndexProcessor.CreateInvertedIndex(paper1).collect().toSet
+      val indexedText2 = invertedIndexProcessor.CreateInvertedIndex(paper2).collect().toSet
+
+      val expectedIndexedText = Set.empty[InverseIndex]
+
+      indexedText1 shouldBe expectedIndexedText
+      indexedText2 shouldBe expectedIndexedText
   }
 }

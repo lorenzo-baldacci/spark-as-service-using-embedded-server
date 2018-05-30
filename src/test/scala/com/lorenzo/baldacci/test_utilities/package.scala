@@ -1,8 +1,8 @@
-package com.lorenzo.baldacci.search
+package com.lorenzo.baldacci
 
 import java.io.{BufferedOutputStream, File}
 
-import com.lorenzo.baldacci.search.fixtures.PrimitiveFixtures
+import com.lorenzo.baldacci.fixtures.PrimitiveFixtures
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 

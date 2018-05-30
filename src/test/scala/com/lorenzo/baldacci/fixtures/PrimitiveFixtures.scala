@@ -1,5 +1,6 @@
-package com.lorenzo.baldacci.search.fixtures
+package com.lorenzo.baldacci.fixtures
 
+import com.lorenzo.baldacci.search.Summary
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.{DateTime, LocalDate, Months}
 
@@ -52,6 +53,9 @@ trait PrimitiveFixtures {
 
   def someBoolean: Boolean = Random.nextBoolean()
 
-
   def someEmailString: String = Random.alphanumeric.take(8).mkString + "@mail.com"
+
+  def someSmallText: String = someSmallSequenceOf(someSmallString).mkString(" ")
+
+  def somePaper: Summary = Summary(Option(someSmallString), Option(someSmallText))
 }

@@ -1,6 +1,5 @@
-package com.lorenzo.baldacci.spark
+package com.lorenzo.baldacci.util
 
-import com.lorenzo.baldacci.util.AppConfig
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -11,5 +10,6 @@ object SparkFactory {
     .getOrCreate
 
   val sc: SparkContext = spark.sparkContext
-  val sparkConf: SparkConf = sc.getConf
+
+  def stop = sc.stop()
 }

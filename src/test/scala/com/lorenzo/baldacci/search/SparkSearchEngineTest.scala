@@ -1,13 +1,80 @@
 package com.lorenzo.baldacci.search
 
-import com.lorenzo.baldacci.search.test_utilities.ScalaTestWithSparkSession
+import com.lorenzo.baldacci.test_utilities.ScalaTestWithSparkSession
 
 class SparkSearchEngineTest extends ScalaTestWithSparkSession {
-  testWithSpark("some name"){
-    sparkSession =>
+  testWithSpark("index should be empty at start") {
+    implicit sparkSession =>
+      val sparkSearchEngine = new SparkSearchEngine
+      sparkSearchEngine.getIndex.collect() shouldBe Seq.empty[InverseIndex]
+  }
 
-    SparkSearchEngine.createOrReplaceIndex
+  testWithSpark("should add papers in bulk to index") {
+    implicit sparkSession =>
+      import sparkSession.implicits._
+      val sparkSearchEngine = new SparkSearchEngine
+      val invertedIndexProcessor = new InvertedIndexProcessor
 
-    2 shouldBe 2
+      val summaries = someSmallSequenceOf(somePaper)
+      val summariesDS = sparkSession.createDataset(summaries)
+      sparkSearchEngine.addToIndex(summariesDS)
+
+      val actualIndex = sparkSearchEngine.getIndex.collect().toSet
+      val expectedIndex = invertedIndexProcessor.CreateInvertedIndex(summariesDS).collect().toSet
+
+      actualIndex shouldBe expectedIndex
+  }
+
+  testWithSpark("indexed single papers should be added to the existing index") {
+    implicit sparkSession =>
+      import sparkSession.implicits._
+      val sparkSearchEngine = new SparkSearchEngine
+      val invertedIndexProcessor = new InvertedIndexProcessor
+
+      val summaries = someSmallSequenceOf(somePaper)
+      val summariesDS = sparkSession.createDataset(summaries)
+      sparkSearchEngine.addToIndex(summariesDS)
+
+      val singlePaperSummary = Summary(Option(someSmallString), Option(someSmallText))
+      sparkSearchEngine.addToIndex(singlePaperSummary)
+
+      val actualIndex = sparkSearchEngine.getIndex.collect().toSet
+      val expectedIndex = invertedIndexProcessor.CreateInvertedIndex(summariesDS).collect().toSet ++
+        invertedIndexProcessor.CreateInvertedIndex(singlePaperSummary).collect().toSet
+
+      actualIndex shouldBe expectedIndex
+  }
+
+  testWithSpark("should retrieve paper ids") {
+    implicit sparkSession =>
+      val sparkSearchEngine = new SparkSearchEngine
+
+      val wordToSearch = someSmallString
+      val singlePaperSummary = Summary(Option(someSmallString), Option(s"$someSmallText $wordToSearch"))
+      sparkSearchEngine.addToIndex(singlePaperSummary)
+
+      val searchResult = sparkSearchEngine.getPaperIds(wordToSearch)
+
+      println(wordToSearch)
+      println(singlePaperSummary)
+      searchResult.foreach(println)
+      sparkSearchEngine.getIndex.show(false)
+
+      searchResult should contain(singlePaperSummary.paperId.get)
+  }
+
+  testWithSpark("should retrieve nothing when searched word is not part of the index") {
+    implicit sparkSession =>
+      import sparkSession.implicits._
+      val sparkSearchEngine = new SparkSearchEngine
+
+      val summaries = someSmallSequenceOf(somePaper)
+      val summariesDS = sparkSession.createDataset(summaries)
+      sparkSearchEngine.addToIndex(summariesDS)
+
+      val wordToSearch = someSmallString + someSmallString
+      val searchResult = sparkSearchEngine.getPaperIds(wordToSearch)
+
+      searchResult shouldBe Array.empty[String]
   }
 }

@@ -8,23 +8,22 @@ object AppConfig {
   private val sparkMasterDef: String = conf.getString("spark.master")
   private val sparkAppNameDef: String = conf.getString("spark.appname")
   private val akkaHttpPortDef: Int = conf.getInt("akka.http.port")
-  private val appFolderPapersDef: String = conf.getString("app.papers.folder")
-  private val appFolderStorageDef: String = conf.getString("app.storage.folder")
-  private val appStorageFileNameDef: String = conf.getString("app.storage.name")
+  private val papersFolderDef: String = conf.getString("papers.folder")
+  private val storageFolderDef: String = conf.getString("storage.folder")
+  private val storageFileNameDef: String = conf.getString("storage.file.name")
 
   var akkaHttpPort: Int = akkaHttpPortDef
   var sparkMaster: String = sparkMasterDef
   var sparkAppName: String = sparkAppNameDef
-  var appPapersFolder: String = appFolderPapersDef
-  var appStorageFolder: String = appFolderStorageDef
-  var appStorageFileName: String = appStorageFileNameDef
+  var papersFolder: String = papersFolderDef
+  var storageFolder: String = storageFolderDef
+  var storageFileName: String = storageFileNameDef
 
   def main(args: Array[String]): Unit = {
     parse("-m localhost1 --akkaHttpPort 8080".split(" ").toList)
     print(sparkMaster, sparkAppName, akkaHttpPort)
   }
 
-  //TODO: will edit this at the end of the development
   val usage =
     s"""
 This application comes as Spark2.1-REST-Service-Provider using an embedded,
@@ -38,13 +37,17 @@ Usage: spark-submit spark-as-service-using-embedded-server.jar [options]
   -m, --master <master_url>                    spark://host:port, mesos://host:port, yarn, or local. Default: $sparkMasterDef
   -n, --name <name>                            A name of your application. Default: $sparkAppNameDef
   -p, --akkaHttpPort <portnumber>              Port where akka-http is binded. Default: $akkaHttpPortDef
+  -f, --paperFolder <paper_folder>             Folder in which papers can be processed in batch. Default: $papersFolderDef
+  -s, --storageFolder <storage_folder>         Folder in which the application will persist the inverted index. Default: $storageFolder
 
 Configured 4 routes:
 1. homepage - http://host:port - says "hello world"
-2. version - http://host:port/version - tells "spark version"
-3. activeStreams - http://host:port/activeStreams - tells how many spark streams are active currently
-4. count - http://host:port/count - random spark job to count a seq of integers
-  """
+2. index papers from file - http://host:port/indexPapersFromFile - retrieves papers from file, process them in bulk, add to the index
+3. index single paper - http://host:port/indexPaper/PAPER_ID|ABSTRACT - process the given paper and add it to the index
+4. persist index - http://host:port/persistIndex - save the index in a permanent storage
+5. retrieve persisted index - http://host:port/retrievePersistedIndex - substitutes the index with one stored previously
+6. query the index - http://host:port/getPapers/WORD_TO_SEARCH - returns the list of papers where the word is found
+      """
 
   def parse(list: List[String]): this.type = {
 
@@ -58,6 +61,12 @@ Configured 4 routes:
         parse(tail)
       case ("--akkaHttpPort" | "-p") :: value :: tail =>
         akkaHttpPort = value.toInt
+        parse(tail)
+      case ("--paperFolder" | "-f") :: value :: tail =>
+        papersFolder = value
+        parse(tail)
+      case ("--storageFolder" | "-s") :: value :: tail =>
+        storageFolder = value
         parse(tail)
       case ("--help" | "-h") :: _ => printUsage(0)
       case _ => printUsage(1)

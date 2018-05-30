@@ -4,24 +4,33 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 
 class InvertedIndexProcessor extends Serializable {
 
-  val separators = """[^0-9a-z_]+"""
+  val separators = "[^0-9a-z_]+"
 
-  def CreateInvertedIndex(itemsToIndex: Dataset[Item])(implicit sparkSession: SparkSession): Dataset[InverseIndex] = {
+  def CreateInvertedIndex(itemsToIndex: Dataset[Summary])(implicit sparkSession: SparkSession): Dataset[InverseIndex] = {
     import sparkSession.implicits._
 
     itemsToIndex
       .filter(i => i.text.isDefined && i.paperId.isDefined)
-      .flatMap(paper =>
-        paper.text.get.toLowerCase().split(separators)
-          .map(_.trim)
-          .filterNot(_ == "")
-          .distinct
-          .map(InverseIndex(_, paper.paperId.get))
-      )
+      .flatMap(toInverseIndex)
+  }
+
+  def CreateInvertedIndex(itemToIndex: Summary)(implicit sparkSession: SparkSession): Dataset[InverseIndex] = {
+    import sparkSession.implicits._
+
+    val inverseIndex = itemToIndex match {
+      case Summary(paperId, text) if paperId.isDefined && text.isDefined => toInverseIndex(itemToIndex)
+      case _ => Array.empty[InverseIndex]
+    }
+
+    sparkSession.createDataset(inverseIndex)
+  }
+
+  private def toInverseIndex(item: Summary): Array[InverseIndex] = {
+    item.text.get.toLowerCase().split(separators)
+      .map(_.trim)
+      .filterNot(_ == "")
+      .distinct
+      .map(InverseIndex(_, item.paperId.get))
   }
 }
-
-case class Item(paperId: Option[String], text: Option[String])
-
-case class InverseIndex(key: String, paperId: String)
 

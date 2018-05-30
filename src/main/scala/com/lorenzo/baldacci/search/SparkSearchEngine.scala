@@ -1,67 +1,34 @@
 package com.lorenzo.baldacci.search
 
-import java.io.{BufferedWriter, FileWriter}
-
-import com.lorenzo.baldacci.spark.SparkFactory
-import com.lorenzo.baldacci.util.AppConfig
 import org.apache.spark.sql.{Dataset, SparkSession}
 
-object SparkSearchEngine {
-
-  implicit private val sparkSession: SparkSession = SparkFactory.spark
-
+class SparkSearchEngine(implicit sparkSession: SparkSession) {
   import sparkSession.implicits._
 
-  private val storageFileName = AppConfig.appStorageFolder + AppConfig.appStorageFileName
-  private val paperFolder = AppConfig.appPapersFolder
+  private var index: Dataset[InverseIndex] = sparkSession.createDataset(Seq.empty[InverseIndex])
 
   def getSparkVersion: String = sparkSession.version
 
-  def getIndexedFileLines: Long = {
-    val csvFile = "Users/lbaldacci/Develop/data/iclr2017_papers.csv"
-    val fileData = sparkSession.read.textFile(s"file:///$csvFile")
-    fileData.count
-  }
+  def replaceIndex(newIndex: Dataset[InverseIndex]): Unit = index = newIndex.cache()
 
-  def readFilesFromFolder(folder: String): Dataset[Paper] = {
-    val csvFile = AppConfig.appPapersFolder + "iclr2017_papers.csv"
-    sparkSession.read.format("csv")
-      .option("sep", ",")
-      .option("header", "true")
-      .load(s"file://$csvFile")
-      .withColumnRenamed("abstract", "summary")
-      .withColumnRenamed("tl;dr", "tldr")
-      .as[Paper]
-  }
+  def emptyIndex(): Unit = index = sparkSession.createDataset(Seq.empty[InverseIndex])
 
-  def writeToLocalFile(ds: Dataset[InverseIndex], fullFileName: String): Unit = {
-    val records: Array[InverseIndex] = ds.collect()
+  def getIndex: Dataset[InverseIndex] = index
 
-    val outputFile = new BufferedWriter(new FileWriter(fullFileName))
-    outputFile.write("key,paperId\n")
-    records.foreach(r => outputFile.write(s"${r.key}, ${r.paperId}\n"))
-    outputFile.close()
-  }
-
-  def createOrReplaceIndex: Long = {
-    val papers = readFilesFromFolder(paperFolder)
-
+  def addToIndex(papers: Dataset[Summary]): Unit = {
     val invertedIndexProcessor = new InvertedIndexProcessor
-    val invertedIndex = invertedIndexProcessor.CreateInvertedIndex(papers.map(p => Item(p.paper_id, p.summary)))
-
-    writeToLocalFile(invertedIndex, storageFileName)
-
-    papers.count
+    val indexedPapers = invertedIndexProcessor.CreateInvertedIndex(papers)
+    index = index.union(indexedPapers).distinct().cache()
   }
 
-  def retrievePaperIds(word: String): Array[String] = {
-    val index = sparkSession.read.format("csv")
-      .option("sep", ",")
-      .option("header", "true")
-      .load(s"file://$storageFileName")
-      .as[InverseIndex]
+  def addToIndex(paper: Summary): Unit = {
+    val invertedIndexProcessor = new InvertedIndexProcessor
+    val indexedPaper = invertedIndexProcessor.CreateInvertedIndex(paper)
+    index = index.union(indexedPaper).distinct().cache()
+  }
 
-    index.filter(_.key == word).map(_.paperId).collect()
+  def getPaperIds(word: String): Array[String] = {
+    index.filter(_.key == word.toLowerCase()).map(_.paperId).collect()
   }
 
 }
@@ -70,3 +37,10 @@ case class Paper(summary: Option[String], authorids: Option[String], authors: Op
                  keywords: Option[String], paper_id: Option[String], paperhash: Option[String], title: Option[String],
                  tldr: Option[String], decision: Option[String], forum_link: Option[String], pdf_link: Option[String])
 
+case class Summary(paperId: Option[String], text: Option[String])
+
+case class InverseIndex(key: String, paperId: String)
+
+// did not manage:
+// re-indexing of a paper and naively managed the duplicated entry o a paper (i.e. submitting the same paper multiple times)
+// stopWords, synonyms
