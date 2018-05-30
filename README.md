@@ -75,5 +75,5 @@ Usage: spark-submit jarname.jar [options]
 ```
 
 ## 4. Credits
-The project has been cloned from [here](https://github.com/spoddutur/spark-as-service-using-embedded-server)
-which provides an empty framework ready for spark and akka http. It then went through refactoring, core functionalities tests and implementation, i/o integration, upgrade of scala, spark and akka http libraries, and other bits and pieces.
+The project has been cloned from [here](https://github.com/spoddutur/spark-as-service-using-embedded-server),
+which provides an empty framework ready with spark and akka http. It then went through refactoring, core functionalities tests and implementation, i/o integration, upgrade of scala, spark and akka http libraries, and other bits and pieces.
