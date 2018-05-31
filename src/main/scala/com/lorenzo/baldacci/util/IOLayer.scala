@@ -1,19 +1,18 @@
 package com.lorenzo.baldacci.util
 
 import java.io.{BufferedWriter, FileWriter}
-
+import sys.process._
 import com.lorenzo.baldacci.search.{InverseIndex, Paper}
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 object IOLayer {
-  def readFilesFromFolder(folder: String)(implicit sparkSession: SparkSession): Dataset[Paper] = {
+  def readFilesFromFolder(fileFullName: String)(implicit sparkSession: SparkSession): Dataset[Paper] = {
     import sparkSession.implicits._
 
-    val csvFile = AppConfig.papersFolder + "iclr2017_papers.csv"
     sparkSession.read.format("csv")
       .option("sep", ",")
       .option("header", "true")
-      .load(s"file://$csvFile")
+      .load(s"file://$fileFullName")
       .withColumnRenamed("abstract", "summary")
       .withColumnRenamed("tl;dr", "tldr")
       .as[Paper]
@@ -36,5 +35,27 @@ object IOLayer {
       .option("header", "true")
       .load(s"file://$storageFileName")
       .as[InverseIndex]
+  }
+
+  def validKaggleFile(kaggleFileName: String)(implicit sparkSession: SparkSession): Boolean = {
+    SparkFactory.spark.read.format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load(s"file://$kaggleFileName")
+      .withColumnRenamed("abstract", "summary")
+      .withColumnRenamed("tl;dr", "tldr")
+      .schema.map(_.name) ==
+    Seq("summary", "authorids", "authors", "conflicts", "keywords", "paper_id", "paperhash", "title", "tldr", "decision", "forum_link", "pdf_link")
+  }
+
+  def downloadAndValidateKaggleFile(temporaryFileName: String, targetFileName: String)(implicit sparkSession: SparkSession): String = {
+    "/Users/lbaldacci/Library/Python/3.6/bin/kaggle datasets download -d ahmaurya/iclr2017reviews".!
+
+    if (validKaggleFile(temporaryFileName)) {
+      s"cp $temporaryFileName $targetFileName".!
+      "Kaggle file successfully downloaded and added to papers folder"
+    } else {
+      "Kaggle file format error"
+    }
   }
 }

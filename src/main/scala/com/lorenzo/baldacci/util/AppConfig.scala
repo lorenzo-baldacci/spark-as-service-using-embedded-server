@@ -11,6 +11,8 @@ object AppConfig {
   private val papersFolderDef: String = conf.getString("papers.folder")
   private val storageFolderDef: String = conf.getString("storage.folder")
   private val storageFileNameDef: String = conf.getString("storage.file.name")
+  private val kaggleFileNameDef: String = conf.getString("kaggle.file")
+  private val temporaryKaggleFolderDef: String = conf.getString("temp.kaggle.folder")
 
   var akkaHttpPort: Int = akkaHttpPortDef
   var sparkMaster: String = sparkMasterDef
@@ -18,6 +20,8 @@ object AppConfig {
   var papersFolder: String = papersFolderDef
   var storageFolder: String = storageFolderDef
   var storageFileName: String = storageFileNameDef
+  val kaggleFileName: String = kaggleFileNameDef
+  val temporaryKaggleFolder: String = temporaryKaggleFolderDef
 
   def main(args: Array[String]): Unit = {
     parse("-m localhost1 --akkaHttpPort 8080".split(" ").toList)

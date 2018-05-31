@@ -53,6 +53,11 @@ object WebServer extends HttpApp {
         get {
           complete(search(segment))
         }
+      } ~
+      path("test") {
+        post {
+          complete(test)
+        }
       }
   }
 }
