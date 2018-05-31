@@ -72,6 +72,13 @@ Returns the list of papers where the provided word is found.
 
 *http://host:port/getPapers/WORD_TO_SEARCH* (get)
 
+
+**refreshIndexFromPublicDataset**
+
+Retrieves the paper file remotely from Kaggle, validates it and optionally replaces the current index.
+
+*http://host:port/refreshIndexFromPublicDataset* (post)
+
 ## 3. Technology stack
 *Scala 2.11*, *Spark 2.3*, *Akka-Http 10.0.9* and Kaggle command line
 
@@ -96,8 +103,11 @@ spark.appname = spark-search-engine
 akka.http.port = 8001
 papers.folder = /path/to/paper/csv/files/
 storage.folder = /path/to/app/index/storage/
-storage.file.name = invertedIndexStorage.csv
-??? kaggle things here ???
+storage.file.name = storageFileName.csv
+kaggle.file = iclr2017_papers.csv
+kaggle.temp.folder = /path/to/.kaggle/datasets/ahmaurya/iclr2017reviews/
+kaggle.bin = /path/to/bin/kaggle
+kaggle.dataset = ahmaurya/iclr2017reviews
 ```
 You can change the default configurations directly on the *application.conf* file.
 Optionally, you can provide configuration params like spark-master, akka-port etc from command line. To see the list of 
@@ -121,9 +131,10 @@ Usage: spark-submit jarname.jar [options]
   -p, --akkaHttpPort <portnumber>              Port where akka-http is binded. Default: $akkaHttpPortDef
   -f, --paperFolder <paper_folder>             Folder in which papers can be processed in batch. Default: $papersFolderDef
   -s, --storageFolder <storage_folder>         Folder in which the application will persist the inverted index. Default: $storageFolder
+  -k, --kaggleBin <kaggle_bin>                 Kaggle binary which will be used to retrieve remotely the paper file. Default: $kaggleBinDef
 ```
 
-## 4. Credits
+## 4. Acknowledgement
 I started this project by branching from a framework ready to host spark services and expose through rest APIs.
 The original framework is available [here](https://github.com/spoddutur/spark-as-service-using-embedded-server).
 The code went then through refactoring, core functionalities tests and implementation, i/o integration, 

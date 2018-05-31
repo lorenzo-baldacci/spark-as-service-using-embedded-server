@@ -6,7 +6,9 @@ import com.lorenzo.baldacci.search.{InverseIndex, Paper}
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 object IOLayer {
-  def readFilesFromFolder(fileFullName: String)(implicit sparkSession: SparkSession): Dataset[Paper] = {
+  def fileExists(fileFullName: String) = new java.io.File(fileFullName).exists
+
+  def readFileFromFolder(fileFullName: String)(implicit sparkSession: SparkSession): Dataset[Paper] = {
     import sparkSession.implicits._
 
     sparkSession.read.format("csv")
@@ -38,24 +40,23 @@ object IOLayer {
   }
 
   def validKaggleFile(kaggleFileName: String)(implicit sparkSession: SparkSession): Boolean = {
-    SparkFactory.spark.read.format("csv")
+    val fileSchema = SparkFactory.spark.read.format("csv")
       .option("sep", ",")
       .option("header", "true")
       .load(s"file://$kaggleFileName")
       .withColumnRenamed("abstract", "summary")
       .withColumnRenamed("tl;dr", "tldr")
-      .schema.map(_.name) ==
-    Seq("summary", "authorids", "authors", "conflicts", "keywords", "paper_id", "paperhash", "title", "tldr", "decision", "forum_link", "pdf_link")
+      .schema.map(_.name).toSet
+    val expectedSchema = Set("summary", "authorids", "authors", "conflicts", "keywords", "paper_id", "paperhash",
+      "title", "tldr", "decision", "forum_link", "pdf_link")
+
+    fileSchema == expectedSchema
   }
 
-  def downloadAndValidateKaggleFile(temporaryFileName: String, targetFileName: String)(implicit sparkSession: SparkSession): String = {
-    "/Users/lbaldacci/Library/Python/3.6/bin/kaggle datasets download -d ahmaurya/iclr2017reviews".!
+  def downloadAndValidateKaggleFile(temporaryFileName: String, targetFileName: String)(implicit sparkSession: SparkSession): Unit = {
+    s"${AppConfig.kaggleBin} datasets download -d ${AppConfig.kaggleDataset}".!
 
-    if (validKaggleFile(temporaryFileName)) {
+    if (validKaggleFile(temporaryFileName))
       s"cp $temporaryFileName $targetFileName".!
-      "Kaggle file successfully downloaded and added to papers folder"
-    } else {
-      "Kaggle file format error"
-    }
   }
 }

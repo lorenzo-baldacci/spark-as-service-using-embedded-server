@@ -10,13 +10,14 @@ import scala.util.Try
 
 /**
   * Http Server definition
-  * Configured 4 routes:
+  * Configured 7 routes:
   * 1. homepage - http://host:port - says "hello world"
   * 2. index papers from file - http://host:port/indexPapersFromFile - retrieves papers from file, process them in bulk, add to the index
   * 3. index single paper - http://host:port/indexPaper/PAPER_ID|ABSTRACT - process the given paper and add it to the index
   * 4. persist index - http://host:port/persistIndex - save the index in a permanent storage
   * 5. retrieve persisted index - http://host:port/retrievePersistedIndex - substitutes the index with one stored previously
   * 6. query the index - http://host:port/getPapers/WORD_TO_SEARCH - returns the list of papers where the word is found
+  * 7. refresh index from remote dataset - http://host:port/refreshIndexFromPublicDataset - replace the current index with remotely retrieved papers
   */
 object WebServer extends HttpApp {
   override def postServerShutdown(attempt: Try[Done], system: ActorSystem): Unit = {
@@ -54,9 +55,9 @@ object WebServer extends HttpApp {
           complete(search(segment))
         }
       } ~
-      path("test") {
+      path("refreshIndexFromPublicDataset") {
         post {
-          complete(test)
+          complete(refreshIndexFromPublicDataset)
         }
       }
   }

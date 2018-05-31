@@ -2,7 +2,7 @@ package com.lorenzo.baldacci.search
 
 import com.lorenzo.baldacci.test_utilities.ScalaTestWithSparkSession
 import com.lorenzo.baldacci.util.AppConfig
-import com.lorenzo.baldacci.util.IOLayer.readFilesFromFolder
+import com.lorenzo.baldacci.util.IOLayer.readFileFromFolder
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.functions._
 
